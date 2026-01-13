@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUTOWESTA | Telemetry Hub</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Bootstrap & FontAwesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep: #020205;
+            --card-bg: rgba(13, 17, 23, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --neon-pink: #ff0055;
+            --neon-blue: #00e5ff;
+            --neon-green: #39ff14;
+            --neon-yellow: #fdf01b;
+            --text-main: #ffffff;
+            --text-muted: #8b949e;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- ADVANCED AUTHENTICATION PAGE GRAPHICS --- */
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .auth-background {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, #050510 0%, #000 100%);
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .node {
+            position: absolute;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            filter: blur(2px);
+            opacity: 0.3;
+            animation: moveNode 20s infinite linear;
+        }
+
+        @keyframes moveNode {
+            from {
+                transform: translate(0, 0);
+            }
+
+            to {
+                transform: translate(var(--tx), var(--ty));
+            }
+        }
+
+        .mesh-blob {
+            position: absolute;
+            filter: blur(120px);
+            opacity: 0.25;
+            animation: float 15s infinite ease-in-out;
+            border-radius: 50%;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: #4a00e0;
+        }
+
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 40vw;
+            height: 40vw;
+            background: var(--neon-pink);
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(40px, -40px) scale(1.1);
+            }
+        }
+
+        .login-card {
+            width: 90%;
+            max-width: 440px;
+            padding: 60px 45px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            text-align: center;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::after {
+            content: "";
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: linear-gradient(45deg, transparent 45%, rgba(0, 229, 255, 0.05) 50%, transparent 55%);
+            animation: scan 6s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .login-logo {
+            font-size: 3.5rem;
+            background: linear-gradient(135deg, #fff, var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.4));
+            margin-bottom: 10px;
+        }
+
+        .auth-title {
+            font-weight: 800;
+            letter-spacing: 4px;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .auth-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 18px 20px 18px 55px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            color: white;
+            outline: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--neon-blue);
+            background: rgba(0, 229, 255, 0.03);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 22px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            transition: 0.3s;
+        }
+
+        .input-wrapper input:focus+i {
+            color: var(--neon-blue);
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 20px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(90deg, var(--neon-pink), #ff4d94);
+            color: white;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(255, 0, 85, 0.3);
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255, 0, 85, 0.5);
+        }
+
+        /* --- DASHBOARD STYLES --- */
+        #dashboard-content {
+            padding: 30px 20px;
+        }
+
+        .nav-glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 18px 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .sensor-card-horizontal {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 25px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .data-section {
+            flex: 0 0 180px;
+            padding-right: 25px;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .graph-section {
+            flex: 1;
+            height: 140px;
+            padding-left: 20px;
+        }
+
+        .card-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 1.2rem;
+        }
+
+        .data-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .ai-panel {
+            background: linear-gradient(135deg, rgba(6, 10, 15, 0.9), rgba(22, 27, 34, 0.9));
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 28px;
+            padding: 30px;
+            margin-top: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .ai-response {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #d1d5db;
+        }
+
+        .ai-response b {
+            color: var(--neon-blue);
+            font-weight: 600;
+        }
+
+        .ai-response ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+
+        .ai-response li {
+            margin-bottom: 5px;
+        }
+
+        .typing-indicator {
+            display: none;
+            color: var(--neon-blue);
+            font-style: italic;
+            font-size: 0.8rem;
+        }
+
+        .btn-ai {
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3);
+        }
+
+        .ai-query-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 15px 120px 15px 20px;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-10px);
+            }
+
+            75% {
+                transform: translateX(10px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sensor-card-horizontal {
+                flex-direction: column;
+            }
+
+            .data-section {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                width: 100%;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+            }
+
+            .graph-section {
+                width: 100%;
+                padding-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-overlay">
+        <div class="auth-background" id="auth-bg">
+            <div class="mesh-blob blob-1"></div>
+            <div class="mesh-blob blob-2"></div>
+        </div>
+        <div class="login-card">
+            <i class="fas fa-bolt login-logo"></i>
+            <h1 class="auth-title">AUTOWESTA</h1>
+            <p class="auth-subtitle">Telemetry Intelligence</p>
+
+            <div class="input-wrapper">
+                <input type="email" id="email" placeholder="Access ID">
+                <i class="fas fa-fingerprint"></i>
+            </div>
+            <div class="input-wrapper">
+                <input type="password" id="password" placeholder="System Key">
+                <i class="fas fa-key"></i>
+            </div>
+
+            <button class="btn-auth" onclick="login()">AUTHORIZE ACCESS</button>
+            <p id="login-error" class="text-danger mt-3 small fw-bold"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="d-none" id="dashboard-content">
+        <div class="container py-4">
+            <nav class="nav-glass">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-bolt text-info fs-4 me-3"></i>
+                    <div>
+                        <div class="fw-bold h4 mb-0">AUTOWESTA</div>
+                        <span
+                            class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25"
+                            style="font-size: 0.65rem;">ONLINE</span>
+                    </div>
+                </div>
+                <button class="btn btn-outline-light btn-sm rounded-pill px-3 opacity-50"
+                    onclick="logout()">LOGOUT</button>
+            </nav>
+
+            <div class="row g-4">
+                <!-- Temperature -->
+                <div class="col-12 col-xl-6">
+                    <div class="sensor-card-horizontal">
+                        <div class="data-section">
+                            <div class="card-icon" style="color: var(--neon-pink);"><i
+                                    class="fas fa-temperature-high"></i></div>
+                            <div class="data-label">Atmosphere</div>
+                            <div class="d-flex align-items-baseline">
+                                <span class="data-value" id="temp" style="color: var(--neon-pink);">--</span>
+                                <span class="data-unit">°C</span>
+                            </div>
+                        </div>
+                        <div class="graph-section"><canvas id="tempChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Humidity -->
+                <div class="col-12 col-xl-6">
+                    <div class="sensor-card-horizontal">
+                        <div class="data-section">
+                            <div class="card-icon" style="color: var(--neon-blue);"><i class="fas fa-tint"></i></div>
+                            <div class="data-label">Humidity</div>
+                            <div class="d-flex align-items-baseline">
+                                <span class="data-value" id="hum" style="color: var(--neon-blue);">--</span>
+                                <span class="data-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="graph-section"><canvas id="humChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- CO2 -->
+                <div class="col-12 col-xl-6">
+                    <div class="sensor-card-horizontal">
+                        <div class="data-section">
+                            <div class="card-icon" style="color: var(--neon-green);"><i class="fas fa-wind"></i></div>
+                            <div class="data-label">Carbon Dioxide</div>
+                            <div class="d-flex align-items-baseline">
+                                <span class="data-value" id="co2" style="color: var(--neon-green);">--</span>
+                                <span class="data-unit">PPM</span>
+                            </div>
+                        </div>
+                        <div class="graph-section"><canvas id="co2Chart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Pressure -->
+                <div class="col-12 col-xl-6">
+                    <div class="sensor-card-horizontal">
+                        <div class="data-section">
+                            <div class="card-icon" style="color: var(--neon-yellow);"><i class="fas fa-meteor"></i>
+                            </div>
+                            <div class="data-label">Air Pressure</div>
+                            <div class="d-flex align-items-baseline">
+                                <span class="data-value" id="pres" style="color: var(--neon-yellow);">--</span>
+                                <span class="data-unit">hPa</span>
+                            </div>
+                        </div>
+                        <div class="graph-section"><canvas id="presChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI INTELLIGENCE PANEL -->
+            <div class="ai-panel">
+                <div class="ai-header">
+                    <div>
+                        <h4 class="mb-1">✨ AI Environmental Intelligence</h4>
+                        <p class="text-muted small mb-0">Powered by Gemini 2.5 Flash</p>
+                    </div>
+                    <button class="btn-ai" onclick="generateAiReport()">✨ ANALYZE SYSTEM</button>
+                </div>
+
+                <div class="ai-response" id="ai-report-box">
+                    Welcome to the AUTOWESTA AI Hub. Click "Analyze System" to generate a real-time environmental risk
+                    assessment based on live telemetry.
+                </div>
+                <div id="typing-indicator" class="typing-indicator mt-2">
+                    <i class="fas fa-brain fa-spin me-2"></i> Analyzing telemetry patterns...
+                </div>
+
+                <div class="ai-input-group mt-4 position-relative">
+                    <input type="text" id="ai-query" class="ai-query-input"
+                        placeholder="Ask a specific question about the current environment...">
+                    <button
+                        class="btn btn-primary btn-sm position-absolute end-0 top-50 translate-middle-y me-2 rounded-pill px-4"
+                        onclick="askAiQuestion()">✨ ASK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        const apiKey = "";
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoc1wep1hVzMbjMdeYOFt6Mf5dxAEIWbw",
+            authDomain: "autowesta-cbe45.firebaseapp.com",
+            databaseURL: "https://autowesta-cbe45-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "autowesta-cbe45",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        let currentData = null;
+
+        // --- AUTH BACKGROUND PARTICLES ---
+        function initAuthBg() {
+            const bg = document.getElementById('auth-bg');
+            if (!bg) return;
+            for (let i = 0; i < 30; i++) {
+                const node = document.createElement('div');
+                node.className = 'node';
+                const size = Math.random() * 4 + 2;
+                node.style.width = size + 'px';
+                node.style.height = size + 'px';
+                node.style.left = Math.random() * 100 + '%';
+                node.style.top = Math.random() * 100 + '%';
+                node.style.setProperty('--tx', (Math.random() * 200 - 100) + 'px');
+                node.style.setProperty('--ty', (Math.random() * 200 - 100) + 'px');
+                node.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                bg.appendChild(node);
+            }
+        }
+        initAuthBg();
+
+        // --- CHARTS ---
+        function createChart(canvasId, color, label) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return null;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 150);
+            gradient.addColorStop(0, color.replace('1)', '0.3)'));
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: label,
+                        data: [],
+                        borderColor: color,
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#555', font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        const charts = {
+            temp: createChart('tempChart', '#ff0055', 'Temp'),
+            hum: createChart('humChart', '#00e5ff', 'Hum'),
+            co2: createChart('co2Chart', '#39ff14', 'CO2'),
+            pres: createChart('presChart', '#fdf01b', 'Pressure')
+        };
+
+        function updateChart(chart, value) {
+            if (!chart) return;
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            chart.data.labels.push(now);
+            chart.data.datasets[0].data.push(value);
+            if (chart.data.labels.length > 30) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            chart.update('none');
+        }
+
+        // --- GEMINI CORE FIX ---
+        function formatAiText(text) {
+            // Simple helper to convert basic Markdown to HTML
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Bold
+                .replace(/\n\* (.*?)/g, '<li>$1</li>') // Bullet points
+                .replace(/\n- (.*?)/g, '<li>$1</li>') // Bullet points
+                .replace(/\n\n/g, '<br><br>') // Paragraphs
+                .replace(/\n/g, '<br>'); // Line breaks
+        }
+
+        async function callGemini(prompt) {
+            const systemPrompt = "You are the AUTOWESTA Environmental AI. Provide professional, actionable insights based on ESP32 telemetry. Use bullet points for recommendations. Use markdown-style bolding for key values.";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        return result.candidates?.[0]?.content?.parts?.[0]?.text || "AI response was empty.";
+                    }
+
+                    if (response.status !== 429 && response.status < 500) {
+                        const errBody = await response.json();
+                        return `AI System Error (${response.status}): ${errBody.error?.message || response.statusText}`;
+                    }
+                } catch (e) {
+                    if (i === 4) return `Network error: ${e.message}. Please check your connection.`;
+                }
+                await new Promise(r => setTimeout(r, delay));
+                delay *= 2;
+            }
+            return "Connection timeout. Please try again.";
+        }
+
+        async function generateAiReport() {
+            if (!currentData) {
+                document.getElementById('ai-report-box').innerText = "Telemetry not loaded. Waiting for sensor sync...";
+                return;
+            }
+
+            const reportBox = document.getElementById('ai-report-box');
+            const indicator = document.getElementById('typing-indicator');
+
+            reportBox.style.opacity = '0.5';
+            indicator.style.display = 'block';
+
+            const prompt = `Generate an Environmental Safety Report for the current readings:
+- Temperature: ${currentData.temperature}°C
+- Humidity: ${currentData.humidity}%
+- CO2: ${currentData.co2_ppm} PPM
+- Pressure: ${currentData.pressure_hpa} hPa
+
+Analyze human comfort, potential health risks (like CO2 buildup), and provide 3 quick optimization tips.`;
+
+            const response = await callGemini(prompt);
+            reportBox.innerHTML = formatAiText(response);
+            reportBox.style.opacity = '1';
+            indicator.style.display = 'none';
+        }
+
+        async function askAiQuestion() {
+            const query = document.getElementById('ai-query').value;
+            if (!query || !currentData) return;
+
+            const reportBox = document.getElementById('ai-report-box');
+            const indicator = document.getElementById('typing-indicator');
+
+            reportBox.style.opacity = '0.5';
+            indicator.style.display = 'block';
+
+            const prompt = `Current Telemetry: T:${currentData.temperature}, H:${currentData.humidity}, C:${currentData.co2_ppm}, P:${currentData.pressure_hpa}.
+The user has a specific question: "${query}"`;
+
+            const response = await callGemini(prompt);
+            reportBox.innerHTML = `<b>Query:</b> ${query}<br><hr>${formatAiText(response)}`;
+            document.getElementById('ai-query').value = '';
+            reportBox.style.opacity = '1';
+            indicator.style.display = 'none';
+        }
+
+        // --- AUTH CORE ---
+        function login() {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            const card = document.querySelector('.login-card');
+            if (!e || !p) { card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 500); return; }
+            auth.signInWithEmailAndPassword(e, p).catch(err => {
+                document.getElementById('login-error').innerText = err.message;
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+            });
+        }
+
+        function logout() { auth.signOut(); }
+
+        auth.onAuthStateChanged(user => {
+            const overlay = document.getElementById('login-overlay');
+            const dash = document.getElementById('dashboard-content');
+            if (user) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    overlay.classList.add('d-none');
+                    dash.classList.remove('d-none');
+                    startSync();
+                }, 1000);
+            } else {
+                overlay.classList.remove('d-none');
+                dash.classList.add('d-none');
+                overlay.style.opacity = '1';
+                overlay.style.pointerEvents = 'all';
+            }
+        });
+
+        function startSync() {
+            db.ref('sensor').on('value', snap => {
+                const val = snap.val();
+                if (!val) return;
+                currentData = val;
+
+                document.getElementById('temp').innerText = (val.temperature || 0).toFixed(1);
+                document.getElementById('hum').innerText = (val.humidity || 0).toFixed(1);
+                document.getElementById('co2').innerText = Math.round(val.co2_ppm || 0);
+                document.getElementById('pres').innerText = (val.pressure_hpa || 0).toFixed(1);
+
+                updateChart(charts.temp, val.temperature);
+                updateChart(charts.hum, val.humidity);
+                updateChart(charts.co2, val.co2_ppm);
+                updateChart(charts.pres, val.pressure_hpa);
+            });
+        }
+
+        document.getElementById('password').addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
+    </script>
+</body>
+
+</html>
